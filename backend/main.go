@@ -7,8 +7,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kelseyhightower/envconfig"
-	"google.golang.org/api/books/v1"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"google.golang.org/api/option"
+
+	books "google.golang.org/api/books/v1"
 )
 
 type EnvConfigInterface struct {
@@ -35,11 +38,16 @@ func sendErrorMessageIfErrorNotNil(ctx *gin.Context, err error) {
 	throwPanicIfErrorNotNil(err)
 }
 
+// @Summary List of books from google library
+// @Produce json
+// @Success 200 {object} books.Volumes
+// @Router /books [get]
 func GetBooksList(ctx *gin.Context, booksService *books.Service) {
 	var query string
 	var startIndex int64
 	var maxResults int64
 	var err error
+	var booksList *books.Volumes
 	if value, ok := ctx.GetQuery("query"); ok {
 		query = value
 	}
@@ -54,11 +62,16 @@ func GetBooksList(ctx *gin.Context, booksService *books.Service) {
 	}
 	ctx.GetQuery("startIndex")
 	ctx.GetQuery("maxResults")
-	booksList, err := booksService.Volumes.List(query).StartIndex(startIndex).MaxResults(maxResults).Do()
+	booksList, err = booksService.Volumes.List(query).StartIndex(startIndex).MaxResults(maxResults).Do()
 	sendErrorMessageIfErrorNotNil(ctx, err)
 	ctx.JSON(http.StatusOK, booksList)
 }
 
+// @Summary Book info from google library
+// @Produce json
+// @Param id path string true "Book id"
+// @Success 200 {object} books.Volume
+// @Router /book/:id [get]
 func GetBook(ctx *gin.Context, booksService *books.Service) {
 	var urlParams UrlParams
 	err := ctx.ShouldBindUri(&urlParams)
@@ -68,6 +81,14 @@ func GetBook(ctx *gin.Context, booksService *books.Service) {
 	ctx.JSON(http.StatusOK, book)
 }
 
+// @title ssg-example
+// @version 1.0
+// @description example backend for static site generation
+
+// @contact.name koeshiro
+// @contact.email koeshiro@yandex.ru
+
+// @BasePath /
 func main() {
 	var envConfig EnvConfigInterface
 	err := envconfig.Process("", &envConfig)
@@ -92,6 +113,7 @@ func main() {
 			"message": "pong",
 		})
 	})
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.NoRoute(func(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{
 			"message": "Not found",

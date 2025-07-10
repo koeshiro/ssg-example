@@ -1,16 +1,16 @@
-FROM golang:1.25 AS build
+FROM --platform=linux/amd64 golang:1.24 AS build
 
-WORKDIR /build
+WORKDIR /app
 COPY go.* ./
-COPY main.go ./
+COPY *.go ./
 
 RUN go mod download
-RUN go build -o ./ssg-example
+RUN GOOS=linux GOARCH=amd64 go build -o ./ssg-example
 
 FROM alpine
 ARG GOOGLE_BOOK_API_KEY
 ARG PORT
 WORKDIR /app
-COPY --from=build /build /app
+COPY --from=build /app/* /app/ssg-example
 
-CMD [ "./ssg-example" ]
+CMD ["/app/ssg-example"]

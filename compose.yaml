@@ -6,9 +6,10 @@ services:
       dockerfile: Dockerfile
     container_name: go-backend
     ports:
-      - "8080:8080"
+      - "8080:${PORT}"
     environment:
-      - PORT=8080
+      - PORT=${PORT}
+      - GOOGLE_BOOK_API_KEY=${GOOGLE_BOOK_API_KEY}
     restart: unless-stopped
 
   frontend:
