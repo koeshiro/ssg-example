@@ -5,12 +5,16 @@ COPY go.* ./
 COPY *.go ./
 
 RUN go mod download
-RUN GOOS=linux GOARCH=amd64 go build -o ./ssg-example
+RUN go install github.com/swaggo/swag/cmd/swag@v1.16.4
+RUN /go/bin/swag init --parseDependency
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./ssg-example main.go
 
 FROM alpine
 ARG GOOGLE_BOOK_API_KEY
 ARG PORT
 WORKDIR /app
-COPY --from=build /app/* /app/ssg-example
+COPY --from=build /app/docs/swagger.json /app/docs/swagger.json
+COPY --from=build /app/docs/swagger.yaml /app/docs/swagger.yaml
+COPY --from=build /app/ssg-example /app/ssg-example
 
 CMD ["/app/ssg-example"]

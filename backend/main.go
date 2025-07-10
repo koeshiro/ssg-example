@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	_ "koeshiro.ru/ssg-example/docs"
+
 	"github.com/gin-gonic/gin"
 	"github.com/kelseyhightower/envconfig"
 	swaggerFiles "github.com/swaggo/files"
