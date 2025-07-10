@@ -25,6 +25,15 @@ func throwPanicIfErrorNotNil(err error) {
 	}
 }
 
+func sendErrorMessageIfErrorNotNil(ctx *gin.Context, err error) {
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": err.Error(),
+		})
+	}
+	throwPanicIfErrorNotNil(err)
+}
+
 func main() {
 	var envConfig EnvConfigInterface
 	err := envconfig.Process("", &envConfig)
@@ -46,30 +55,35 @@ func main() {
 		}
 		if value, ok := ctx.GetQuery("startIndex"); ok {
 			startIndex, err = strconv.ParseInt(value, 10, 64)
-			throwPanicIfErrorNotNil(err)
+			sendErrorMessageIfErrorNotNil(ctx, err)
 		}
 
 		if value, ok := ctx.GetQuery("maxResults"); ok {
 			maxResults, err = strconv.ParseInt(value, 10, 64)
-			throwPanicIfErrorNotNil(err)
+			sendErrorMessageIfErrorNotNil(ctx, err)
 		}
 		ctx.GetQuery("startIndex")
 		ctx.GetQuery("maxResults")
 		booksList, err := booksService.Volumes.List(query).StartIndex(startIndex).MaxResults(maxResults).Do()
-		throwPanicIfErrorNotNil(err)
+		sendErrorMessageIfErrorNotNil(ctx, err)
 		ctx.JSON(http.StatusOK, booksList)
 	})
 	r.GET("/book/:id", func(ctx *gin.Context) {
 		var urlParams UrlParams
 		err := ctx.ShouldBindUri(&urlParams)
-		throwPanicIfErrorNotNil(err)
+		sendErrorMessageIfErrorNotNil(ctx, err)
 		book, err := booksService.Volumes.Get(urlParams.ID).Do()
-		throwPanicIfErrorNotNil(err)
+		sendErrorMessageIfErrorNotNil(ctx, err)
 		ctx.JSON(http.StatusOK, book)
 	})
 	r.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "pong",
+		})
+	})
+	r.NoRoute(func(ctx *gin.Context) {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"message": "Not found",
 		})
 	})
 	r.Run(":8080")
