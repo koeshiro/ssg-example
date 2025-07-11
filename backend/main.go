@@ -4,16 +4,17 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
-	_ "koeshiro.ru/ssg-example/docs"
+	_ "github.com/koeshiro/ssg-example/docs"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/kelseyhightower/envconfig"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"google.golang.org/api/option"
-
 	books "google.golang.org/api/books/v1"
+	"google.golang.org/api/option"
 )
 
 type EnvConfigInterface struct {
@@ -42,6 +43,9 @@ func sendErrorMessageIfErrorNotNil(ctx *gin.Context, err error) {
 
 // @Summary List of books from google library
 // @Produce json
+// @Param query query string true "Text to search"
+// @Param startIndex query number true "start index"
+// @Param maxResults query number true "max results, max num 40"
 // @Success 200 {object} books.Volumes
 // @Router /books [get]
 func GetBooksList(ctx *gin.Context, booksService *books.Service) {
@@ -103,6 +107,15 @@ func main() {
 	defaultOptions["language"] = "ru"
 
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"PUT", "PATCH"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	r.GET("/books", func(ctx *gin.Context) {
 		GetBooksList(ctx, booksService)
