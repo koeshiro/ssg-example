@@ -4,10 +4,14 @@
     <v-row>
       <v-col>
         <v-chip-group>
-          <v-chip v-for="chip,index in chips" :key="index" @click="()=>{
-            search=chip;
-            searchBooks()
-          }">
+          <v-chip
+            v-for="chip,index in chips"
+            :key="index"
+            @click="()=>{
+              search=chip;
+              searchBooks()
+            }"
+          >
             {{ chip }}
           </v-chip>
         </v-chip-group>
@@ -52,7 +56,7 @@
         <BookListItem
           :title="item.volumeInfo?.title"
           :subtitle="item.volumeInfo?.subtitle"
-          :imageSrc="item.volumeInfo?.imageLinks?.thumbnail"
+          :image-src="item.volumeInfo?.imageLinks?.thumbnail"
         />
       </v-col>
     </v-row>
