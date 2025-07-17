@@ -1,4 +1,3 @@
-<!-- CardList.vue -->
 <template>
   <v-container class="py-8">
     <v-row>
@@ -7,10 +6,7 @@
           <v-chip
             v-for="chip,index in chips"
             :key="index"
-            @click="()=>{
-              search=chip;
-              searchBooks()
-            }"
+            :to="`/list/${chip}`"
           >
             {{ chip }}
           </v-chip>
@@ -20,7 +16,7 @@
     <v-row>
         <v-col cols="11">
             <v-text-field
-                v-model="search"
+                v-model="currentSearch"
                 label="Search"
                 prepend-inner-icon="mdi-magnify"
                 clearable
@@ -28,7 +24,7 @@
             />
         </v-col>
         <v-col cols="1">
-            <v-btn icon @click="searchBooks">
+            <v-btn icon @click="loadPageBooks(currentSearch, currentPage)">
                 <v-icon>mdi-magnify</v-icon>
             </v-btn>
         </v-col>
@@ -80,6 +76,15 @@
 <script setup lang="ts">
 import type { BooksVolume } from '~/api/backend';
 
+
+const props = withDefaults(
+  defineProps<{search?: string; page?: number}>(),
+  {
+    search: '',
+    page: 0
+  },
+)
+
 const chips: string[] = [
   'subject:IT',
   'Golang',
@@ -96,38 +101,27 @@ const chips: string[] = [
 const maxResults = 40
 
 const isLoading = ref(false)
-const search = ref('')
-const currentPage = ref(0)
+const currentSearch = ref(props.search)
+const currentPage = ref(props.page)
 const pageCount = ref(0)
 const books: Ref<BooksVolume[]> = ref([])
 const { backend } = useApi()
+const router = useRouter()
 
 const totalItemsToPageCount = (totalItems: number) => {
   if (totalItems > 300) {
-    return 7
+    return 8
   }
   return Math.floor(totalItems / maxResults)
 }
 
-const searchBooks = async () => {
-  isLoading.value = true
-  const response = (await backend.booksGet({
-    startIndex: 0,
-    maxResults,
-    query: search.value
-  }))
-  pageCount.value = totalItemsToPageCount(response.totalItems ?? 0)
-
-  books.value = response.items ?? []
-  isLoading.value = false
-}
-const loadPageBooks = async (page: number) => {
+const loadPageBooks = async (search: string, page: number = 1) => {
   const startPage = page -1
   isLoading.value = true
   const response = (await backend.booksGet({
     startIndex: startPage > 0 ? startPage * maxResults : 0,
     maxResults,
-    query: search.value
+    query: search
   }))
 
   pageCount.value = totalItemsToPageCount(response.totalItems ?? 0)
@@ -135,7 +129,15 @@ const loadPageBooks = async (page: number) => {
   isLoading.value = false
 }
 
-watch(currentPage, () => {
-  loadPageBooks(currentPage.value)
+if (props.search) {
+  await loadPageBooks(currentSearch.value, currentPage.value)
+}
+
+watch(currentPage, async () => {
+  if(currentSearch.value.length) {
+    router.push(`/list/${currentSearch.value}/${currentPage.value}`)
+  }
+
+  await loadPageBooks(currentSearch.value, currentPage.value)
 })
 </script>
