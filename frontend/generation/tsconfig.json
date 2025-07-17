@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "target": "esnext",
+        "moduleResolution": "Bundler",
+        "lib": ["ESNext", "ESNext.AsyncIterable", "DOM"],
+        "esModuleInterop": true,
+        "allowJs": true,
+        "sourceMap": true,
+        "experimentalDecorators": true,
+        "baseUrl": ".",
+        "outDir": "./dist",
+        "strict": true,
+        "resolveJsonModule": true,
+        "paths": {
+            "@/*": ["../*"]
+        },
+        "skipLibCheck": true,
+    },
+    "tsc-alias": {
+        "resolveFullPaths": true
+    },
+    "exclude": ["node_modules", ".nuxt", "dist"]
+}
