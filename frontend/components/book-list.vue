@@ -4,7 +4,7 @@
       <v-col>
         <v-chip-group>
           <v-chip
-            v-for="chip,index in chips"
+            v-for="chip, index in chips"
             :key="index"
             :to="`/list/${chip}`"
           >
@@ -14,78 +14,64 @@
       </v-col>
     </v-row>
     <v-row>
-        <v-col cols="11">
-            <v-text-field
-                v-model="currentSearch"
-                label="Search"
-                prepend-inner-icon="mdi-magnify"
-                clearable
-                variant="outlined"
-            />
-        </v-col>
-        <v-col cols="1">
-            <v-btn icon @click="loadPageBooks(currentSearch, currentPage)">
-                <v-icon>mdi-magnify</v-icon>
-            </v-btn>
-        </v-col>
+      <v-col cols="11">
+        <v-text-field
+          v-model="currentSearch"
+          label="Search"
+          prepend-inner-icon="mdi-magnify"
+          clearable
+          variant="outlined"
+        />
+      </v-col>
+      <v-col cols="1">
+        <v-btn icon @click="async () => books = await loadPageBooks(currentSearch, currentPage)">
+          <v-icon>mdi-magnify</v-icon>
+        </v-btn>
+      </v-col>
     </v-row>
     <template v-if="isLoading">
       <v-row>
         <v-col>
-          <v-progress-circular
-            indeterminate
-            color="primary"
-            size="48"
-          />
+          <v-progress-circular indeterminate color="primary" size="48" />
         </v-col>
       </v-row>
     </template>
     <template v-else>
-    <v-row dense>
-      <v-col
-        v-for="(item, index) in books"
-        :key="index"
-        cols="12"
-        sm="6"
-        md="3"
-      >
-        <BookListItem
-          :title="item.volumeInfo?.title"
-          :subtitle="item.volumeInfo?.subtitle"
-          :image-src="item.volumeInfo?.imageLinks?.thumbnail"
-        />
-      </v-col>
-    </v-row>
-    <v-row :key="currentPage">
-      <v-col>
-        <v-pagination
-          v-if="pageCount>0" 
-          v-model="currentPage"
-          :length="pageCount"
-          :total-visible="7"
-          class="mt-4"
-          rounded
-          color="primary"
-        />
-      </v-col>
-    </v-row>
+      <v-row dense>
+        <v-col v-for="(item, index) in books" :key="index" cols="12" sm="6" md="3">
+          <BookListItem
+            :title="item.volumeInfo?.title"
+            :subtitle="item.volumeInfo?.subtitle"
+            :image-src="item.volumeInfo?.imageLinks?.thumbnail"
+          />
+        </v-col>
+      </v-row>
+      <v-row :key="currentPage">
+        <v-col>
+          <v-pagination
+            v-if="pageCount > 0"
+            v-model="currentPage"
+            :length="pageCount"
+            :total-visible="7"
+            class="mt-4"
+            rounded color="primary"
+          />
+        </v-col>
+      </v-row>
     </template>
   </v-container>
 </template>
 
-<script setup lang="ts">
-import type { BooksVolume } from '~/api/backend';
-
-
+<script async setup lang="ts">
 const props = withDefaults(
-  defineProps<{search?: string; page?: number}>(),
+  defineProps<{ search?: string; page?: number }>(),
   {
     search: '',
     page: 0
   },
 )
 
-const chips: string[] = [
+const chips: Ref<string[]> = ref([
   'subject:IT',
   'Golang',
   'PHP',
@@ -97,16 +83,14 @@ const chips: string[] = [
   'swift',
   'rust',
   'typescript'
-]
+])
 const maxResults = 40
 
 const isLoading = ref(false)
 const currentSearch = ref(props.search)
 const currentPage = ref(props.page)
 const pageCount = ref(0)
-const books: Ref<BooksVolume[]> = ref([])
 const { backend } = useApi()
-const router = useRouter()
 
 const totalItemsToPageCount = (totalItems: number) => {
   if (totalItems > 300) {
@@ -116,7 +100,10 @@ const totalItemsToPageCount = (totalItems: number) => {
 }
 
 const loadPageBooks = async (search: string, page: number = 1) => {
-  const startPage = page -1
+  if (!search.length) {
+    return [];
+  }
+  const startPage = page - 1
   isLoading.value = true
   const response = (await backend.booksGet({
     startIndex: startPage > 0 ? startPage * maxResults : 0,
@@ -125,19 +112,20 @@ const loadPageBooks = async (search: string, page: number = 1) => {
   }))
 
   pageCount.value = totalItemsToPageCount(response.totalItems ?? 0)
-  books.value = response.items ?? []
   isLoading.value = false
+  return response.items
 }
 
-if (props.search) {
-  await loadPageBooks(currentSearch.value, currentPage.value)
-}
-
-watch(currentPage, async () => {
-  if(currentSearch.value.length) {
-    router.push(`/list/${currentSearch.value}/${currentPage.value}`)
+const event = useRequestEvent()
+const { data: books } = event?.context?.payload?.books ? { data: event?.context.payload.books } : await useAsyncData(
+  'books',
+  () =>
+    loadPageBooks(currentSearch.value, currentPage.value),
+  {
+    watch: [
+      currentSearch,
+      currentPage
+    ]
   }
-
-  await loadPageBooks(currentSearch.value, currentPage.value)
-})
+)
 </script>
