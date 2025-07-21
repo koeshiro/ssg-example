@@ -1,0 +1,11 @@
+auth:
+  type: DISABLED
+kafka:
+  clusters:
+  - bootstrapServers: kafka-bitnami:29092
+    name: app
+    properties: {}
+    readOnly: false
+rbac:
+  roles: []
+webclient: {}
