@@ -64,26 +64,14 @@
 
 <script async setup lang="ts">
 const props = withDefaults(
-  defineProps<{ search?: string; page?: number }>(),
+  defineProps<{ search?: string; page?: number, chips?: string[] }>(),
   {
     search: '',
-    page: 0
+    page: 0,
+    chips: () => []
   },
 )
 
-const chips: Ref<string[]> = ref([
-  'subject:IT',
-  'Golang',
-  'PHP',
-  'Linux',
-  'Docker',
-  'kubernetes',
-  'java',
-  'c#',
-  'swift',
-  'rust',
-  'typescript'
-])
 const maxResults = 40
 
 const isLoading = ref(false)
