@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"strconv"
 
 	"github.com/IBM/sarama"
@@ -18,6 +20,11 @@ type EnvConfigInterface struct {
 	KafkaUrl            string `required:"true" envconfig:"KAFKA_URL"`
 	KafkaTopicName      string `required:"true" envconfig:"KAFKA_TOPIC_NAME"`
 	KafkaNumPartitions  string `required:"true" envconfig:"KAFKA_NUMBER_PARTITIONS"`
+}
+
+type RouteList struct {
+	Subject string
+	Page    string
 }
 
 func createTopic(topic string, NumPartitions int32, client sarama.Client) error {
@@ -63,6 +70,8 @@ func sendData(topic string, client sarama.Client, booksService *books.Service) {
 	}
 	chanel := producer.Input()
 	const maxResults = 40
+	tmpl, err := template.New("route /list").Parse(`/list/{{.Subject}}/{{.Page}}`)
+	utils.ThrowPanicIfErrorNotNil(err)
 	for _, subject := range subjects {
 		for currentPage := int64(0); currentPage < 8; currentPage++ {
 			books, err := booksService.Volumes.List(subject).MaxResults(maxResults).StartIndex(currentPage * maxResults).Do()
@@ -72,10 +81,16 @@ func sendData(topic string, client sarama.Client, booksService *books.Service) {
 			}
 			jsonData, err := json.Marshal(books.Items)
 			utils.ThrowPanicIfErrorNotNil(err)
+			var keyBuffer bytes.Buffer
+			err = tmpl.Execute(&keyBuffer, RouteList{
+				Subject: subject,
+				Page:    strconv.FormatInt(currentPage+1, 10),
+			})
+			utils.ThrowPanicIfErrorNotNil(err)
 
 			chanel <- &sarama.ProducerMessage{
 				Topic: topic,
-				Key:   sarama.StringEncoder(subject + "-" + strconv.FormatInt(currentPage, 10)),
+				Key:   sarama.StringEncoder(keyBuffer.String()),
 				Value: sarama.StringEncoder(string(jsonData)),
 			}
 		}
