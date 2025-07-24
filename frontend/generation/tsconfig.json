@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "target": "esnext",
+        "module": "esnext",
         "moduleResolution": "Bundler",
         "lib": ["ESNext", "ESNext.AsyncIterable", "DOM"],
         "esModuleInterop": true,

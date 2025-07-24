@@ -8,17 +8,20 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "build:generator": "tsc -b ./generation/ && tsc-alias -p ./generation/tsconfig.json"
+    "build:generator": "tsc -b ./generation/ && cp -r ./.output/* ./generation/dist/.output"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
     "@nuxt/eslint": "^1.5.2",
     "eslint": "^9.30.1",
+    "kafkajs": "^2.2.4",
     "nuxt": "^3.17.6",
+    "tar-stream": "^3.1.7",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@types/tar-stream": "^3.1.4",
     "vite-plugin-vuetify": "^2.1.1",
     "vuetify": "^3.9.0"
   }

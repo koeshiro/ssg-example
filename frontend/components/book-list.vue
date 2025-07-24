@@ -63,6 +63,8 @@
 </template>
 
 <script async setup lang="ts">
+import type { BooksVolume } from '~/api/backend';
+
 const props = withDefaults(
   defineProps<{ search?: string; page?: number, chips?: string[] }>(),
   {
@@ -105,10 +107,14 @@ const loadPageBooks = async (search: string, page: number = 1) => {
 }
 
 const event = useRequestEvent()
-const { data: books } = event?.context?.payload?.books ? { data: event?.context.payload.books } : await useAsyncData(
+const { data: books } = await useAsyncData(
   'books',
-  () =>
-    loadPageBooks(currentSearch.value, currentPage.value),
+  () => {
+    if (event?.context?.payload?.books) {
+      return Promise.all(event?.context?.payload?.books as BooksVolume[])
+    }
+    return loadPageBooks(currentSearch.value, currentPage.value)
+  },
   {
     watch: [
       currentSearch,

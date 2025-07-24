@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"strconv"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/kelseyhightower/envconfig"
@@ -24,7 +25,6 @@ type EnvConfigInterface struct {
 
 type RouteList struct {
 	Subject string
-	Page    string
 }
 
 func createTopic(topic string, NumPartitions int32, client sarama.Client) error {
@@ -57,42 +57,48 @@ func sendData(topic string, client sarama.Client, booksService *books.Service) {
 	}()
 	var subjects []string = []string{
 		"subject:IT",
-		"Golang",
-		"PHP",
-		"Linux",
-		"Docker",
+		"golang",
+		"php",
+		"linux",
 		"kubernetes",
-		"java",
-		"c#",
 		"swift",
 		"rust",
 		"typescript",
+		"java",
+		"c#",
+		"docker",
 	}
 	chanel := producer.Input()
 	const maxResults = 40
-	tmpl, err := template.New("route /list").Parse(`/list/{{.Subject}}/{{.Page}}`)
+	tmpl, err := template.New("route /list").Parse(`/list/{{.Subject}}`)
 	utils.ThrowPanicIfErrorNotNil(err)
 	for _, subject := range subjects {
+		fmt.Println("Subject " + subject)
+		var booksPages [][]*books.Volume = [][]*books.Volume{}
 		for currentPage := int64(0); currentPage < 8; currentPage++ {
+			fmt.Println("page " + strconv.Itoa(int(currentPage)))
 			books, err := booksService.Volumes.List(subject).MaxResults(maxResults).StartIndex(currentPage * maxResults).Do()
 			utils.ThrowPanicIfErrorNotNil(err)
 			if len(books.Items) == 0 {
 				break
 			}
-			jsonData, err := json.Marshal(books.Items)
-			utils.ThrowPanicIfErrorNotNil(err)
-			var keyBuffer bytes.Buffer
-			err = tmpl.Execute(&keyBuffer, RouteList{
-				Subject: subject,
-				Page:    strconv.FormatInt(currentPage+1, 10),
-			})
-			utils.ThrowPanicIfErrorNotNil(err)
+			booksPages = append(booksPages, books.Items)
+			time.Sleep(time.Second / 3)
+		}
+		time.Sleep(time.Second)
+		jsonData, err := json.Marshal(booksPages)
+		utils.ThrowPanicIfErrorNotNil(err)
 
-			chanel <- &sarama.ProducerMessage{
-				Topic: topic,
-				Key:   sarama.StringEncoder(keyBuffer.String()),
-				Value: sarama.StringEncoder(string(jsonData)),
-			}
+		var keyBuffer bytes.Buffer
+		err = tmpl.Execute(&keyBuffer, RouteList{
+			Subject: subject,
+		})
+		utils.ThrowPanicIfErrorNotNil(err)
+
+		chanel <- &sarama.ProducerMessage{
+			Topic: topic,
+			Key:   sarama.StringEncoder(keyBuffer.String()),
+			Value: sarama.StringEncoder(string(jsonData)),
 		}
 	}
 }
