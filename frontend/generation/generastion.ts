@@ -88,12 +88,18 @@ async function flushPullPages(outputFileNameBase: string, pull: {name: string; d
         autoCommit: true,
         eachMessage: async ({ message, heartbeat }) => {
             const url: string = message.key?.toString() ?? ''
+            console.log('url: ', url)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const payloads: any[] = JSON.parse(message.value?.toString()??'[]')
             if (url === '') {
                 return
             }
             console.log('New path',path.join(nuxt.options.buildDir, url, 'index.html'));
+            let totalItems = 0;
+            if (message.headers !== undefined && 'total-items' in message.headers) {
+                totalItems = Number(message?.headers['total-items'])
+            }
+            
             for(const [index, payload] of Object.entries(payloads)) {
                 console.time(url)
                 try {
@@ -102,7 +108,7 @@ async function flushPullPages(outputFileNameBase: string, pull: {name: string; d
                         context: {
                             nuxt,
                             nitro: nitro.f(),
-                            payload: { books: payload }
+                            payload: { books: payload, totalItems }
                         },
                         node: {
                             res: new http.ServerResponse(new http.IncomingMessage(new net.Socket()))
@@ -119,9 +125,10 @@ async function flushPullPages(outputFileNameBase: string, pull: {name: string; d
             }
             
             lastUpdateTime = new Date()
-            await flushPullPages(outputFileNameBase + "-" + url.replaceAll('/','_') + "-" + Number(new Date()), results)
+            await flushPullPages(outputFileNameBase + url.replaceAll('/','-') + "-" + Number(new Date()), results)
             results=[];
-            heartbeat()
+            console.log('heartbeat')
+            await heartbeat()
         }
     })
 

@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   ssr: true,
   runtimeConfig: {
     public: {
-      publicApiBaseUrl: process.env.NUXT_PUBLIC_API_BASE,
+      apiBase: '', // can be overridden by NUXT_PUBLIC_API_BASE environment variable
     }
   },
   devtools: { enabled: true },
