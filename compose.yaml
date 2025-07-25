@@ -55,8 +55,8 @@ services:
     ports:
       - "3010:3010"
     environment:
-      - PORT=3010
-      - GOOGLE_BOOK_API_KEY=${GOOGLE_BOOK_API_KEY}
+      PORT: 3010
+      GOOGLE_BOOK_API_KEY: ${GOOGLE_BOOK_API_KEY}
     restart: unless-stopped
     networks:
       - app-network
@@ -69,10 +69,26 @@ services:
     ports:
       - "4010:4010"
     environment:
-      - PORT=4010
-      - NUXT_PUBLIC_API_BASE=http://backend:3010
+      PORT: 4010
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE}
     restart: unless-stopped
+    links:
+      - "nginx_app:${DOMAIN}"
     networks:
       - app-network
     depends_on:
       - backend
+  nginx_app:
+    image: nginx:latest
+    container_name: nginx_app
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/templates:/etc/nginx/templates
+      - ./nginx/public:/data/public
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - app-network

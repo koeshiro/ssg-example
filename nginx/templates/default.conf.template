@@ -1,0 +1,37 @@
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    location / {
+        autoindex on;
+        root /data/public;
+        try_files $uri/index.html @nuxt;
+    }
+    location @nuxt {
+        rewrite ^([^.\?]*[^/])$ $1/ permanent;
+
+        proxy_pass http://frontend:4010;
+
+        proxy_redirect off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 1m;
+        proxy_connect_timeout 1m;
+    }
+
+    # Проксирование API-запросов
+    location /api/ {
+        proxy_pass http://backend:3010/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Логирование (опционально)
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+}
