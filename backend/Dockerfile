@@ -1,8 +1,13 @@
 FROM golang:1.24 AS build
 
 WORKDIR /app
-COPY go.* ./
-COPY *.go ./
+COPY go.mod ./
+COPY go.sum ./
+COPY main.go ./
+COPY main.go ./
+COPY ./routes ./routes
+COPY ./utils ./utils
+COPY ./kafka-producer ./kafka-producer
 
 RUN go mod download
 RUN go install github.com/swaggo/swag/cmd/swag@v1.16.4

@@ -14,3 +14,9 @@ func SendErrorMessageIfErrorNotNil(ctx *gin.Context, err error) {
 	}
 	ThrowPanicIfErrorNotNil(err)
 }
+
+func ThrowPanicIfErrorNotNil(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

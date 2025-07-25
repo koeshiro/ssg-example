@@ -49,7 +49,7 @@ func createTopic(topic string, NumPartitions int32, client sarama.Client) error 
 }
 
 func sendData(topic string, client sarama.Client, booksService *books.Service) {
-	producer, err := sarama.NewAsyncProducerFromClient(client)
+	producer, err := sarama.NewSyncProducerFromClient(client)
 	utils.ThrowPanicIfErrorNotNil(err)
 	defer func() {
 		err := producer.Close()
@@ -68,13 +68,14 @@ func sendData(topic string, client sarama.Client, booksService *books.Service) {
 		"c#",
 		"docker",
 	}
-	chanel := producer.Input()
+
 	const maxResults = 40
 	tmpl, err := template.New("route /list").Parse(`/list/{{.Subject}}`)
 	utils.ThrowPanicIfErrorNotNil(err)
 	for _, subject := range subjects {
 		fmt.Println("Subject " + subject)
 		var booksPages [][]*books.Volume = [][]*books.Volume{}
+		var totalItems int64 = 0
 		for currentPage := int64(0); currentPage < 8; currentPage++ {
 			fmt.Println("page " + strconv.Itoa(int(currentPage)))
 			books, err := booksService.Volumes.List(subject).MaxResults(maxResults).StartIndex(currentPage * maxResults).Do()
@@ -83,6 +84,7 @@ func sendData(topic string, client sarama.Client, booksService *books.Service) {
 				break
 			}
 			booksPages = append(booksPages, books.Items)
+			totalItems = books.TotalItems
 			time.Sleep(time.Second / 3)
 		}
 		time.Sleep(time.Second)
@@ -95,11 +97,19 @@ func sendData(topic string, client sarama.Client, booksService *books.Service) {
 		})
 		utils.ThrowPanicIfErrorNotNil(err)
 
-		chanel <- &sarama.ProducerMessage{
+		fmt.Println("Send data to kafka " + subject)
+		_, _, err = producer.SendMessage(&sarama.ProducerMessage{
 			Topic: topic,
+			Headers: []sarama.RecordHeader{
+				{
+					Key:   []byte("total-items"),
+					Value: []byte(strconv.Itoa(int(totalItems))),
+				},
+			},
 			Key:   sarama.StringEncoder(keyBuffer.String()),
 			Value: sarama.StringEncoder(string(jsonData)),
-		}
+		})
+		utils.ThrowPanicIfErrorNotNil(err)
 	}
 }
 
@@ -110,6 +120,10 @@ func main() {
 
 	fmt.Println("Create sarama config")
 	config := sarama.NewConfig()
+	config.Producer.Return.Successes = true
+	config.Producer.Return.Errors = true
+	config.Producer.MaxMessageBytes = 3000000
+
 	utils.ThrowPanicIfErrorNotNil(err)
 
 	fmt.Println("Create sarama admin client")
