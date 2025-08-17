@@ -4,49 +4,6 @@ networks:
     name: ssg-example_app-network
     driver: bridge
 services:
-  kafka-bitnami:
-    hostname: kafka-bitnami
-    container_name: kafka-bitnami
-    image: bitnami/kafka:latest
-    restart: on-failure
-    expose:
-      - 29091
-      - 29092
-      - 29093
-    ports:
-      - "29091:29091"
-      - "29092:29092"
-      - "29093:29093"
-      - "9092:9092"
-    volumes:
-      - "./data/kafka:/bitnami"
-    environment:
-      # KRaft settings
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-bitnami:29093
-      # Listeners
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://kafka-bitnami:29092,CONTROLLER://:29093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-bitnami:29092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - KAFKA_CFG_MESSAGE_MAX_BYTES=20000000
-    networks:
-      - app-network
-  kafka-ui:
-    container_name: kafka-ui
-    image: provectuslabs/kafka-ui:latest
-    depends_on:
-      - kafka-bitnami
-    environment:
-      DYNAMIC_CONFIG_ENABLED: 'true'
-    volumes:
-      - ./kafka-ui.config.yaml:/etc/kafkaui/dynamic_config.yaml
-    ports:
-      - 8080:8080
-    networks:
-      - app-network
   backend:
     build:
       context: ./backend
@@ -57,6 +14,9 @@ services:
     environment:
       PORT: 3010
       GOOGLE_BOOK_API_KEY: ${GOOGLE_BOOK_API_KEY}
+      GOCACHE: /root/.cache/go-build
+    volumes:
+      - ./.cache/go-build:/root/.cache/go-build:ro
     restart: unless-stopped
     networks:
       - app-network

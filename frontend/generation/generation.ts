@@ -50,6 +50,9 @@ async function flushPullPages(outputFileNameBase: string, pull: {name: string; d
     if (!('KAFKA_CLIENT_ID' in process.env)) {
         throw new Error('KAFKA_CLIENT_ID is not found')
     }
+    if (!('OUTPUT_DIR' in process.env)) {
+        throw new Error('OUTPUT_DIR is not found')
+    }
     console.log('Load nuxt');
     const nuxt = await loadNuxt({
         config: {
@@ -83,7 +86,11 @@ async function flushPullPages(outputFileNameBase: string, pull: {name: string; d
 
     let lastUpdateTime = new Date();
     let results: {name: string; data: string;}[] = []
-    const outputFileNameBase = path.join(nuxt.options.srcDir, '.output/public/', process.env.HOSTNAME ?? 'localhost');
+    const outputFileNameBase = path.join(
+        process.env.OUTPUT_DIR ? process.env.OUTPUT_DIR : nuxt.options.srcDir + '/.output/public/',
+        process.env.HOSTNAME ?? 'localhost'
+    );
+    console.log(`outputFileNameBase: ${outputFileNameBase}`)
     await consumer.run({
         autoCommit: true,
         eachMessage: async ({ message, heartbeat }) => {
